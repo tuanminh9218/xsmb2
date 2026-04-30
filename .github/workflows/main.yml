@@ -5,7 +5,7 @@ on:
     branches: ["main", "master"]
   workflow_dispatch:
 
-# Ép dùng Node 24 cho hệ thống Action năm 2026
+# QUAN TRỌNG: Ép các JavaScript Actions chạy trên môi trường Node 24
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -14,9 +14,9 @@ permissions:
   pages: write
   id-token: write
 
-# Chỉnh sửa concurrency để hủy các task cũ, tránh tạo ra nhiều artifact thừa
 concurrency:
   group: "pages"
+  # Đổi thành true để tự động hủy các build cũ, tránh lỗi "Multiple artifacts"
   cancel-in-progress: true 
 
 jobs:
@@ -29,7 +29,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
+          # Nâng cấp lên Node.js 24
           node-version: "24"
+          # Bật cache để cài đặt dependencies nhanh hơn
           cache: 'npm'
           
       - name: Install dependencies
@@ -44,7 +46,7 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
-          # Thêm dòng này để xóa các artifact cũ nếu có trùng lặp trong cache
+          # Giới hạn thời gian lưu trữ để tránh xung đột dữ liệu cũ
           retention-days: 1
 
   deploy:
