@@ -5,7 +5,7 @@ on:
     branches: ["main", "master"]
   workflow_dispatch:
 
-# Thêm biến môi trường ở đây để ép GitHub Actions dùng Node 24 cho chính các Action (checkout, setup-node...)
+# Ép dùng Node 24 cho hệ thống Action năm 2026
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -14,9 +14,10 @@ permissions:
   pages: write
   id-token: write
 
+# Chỉnh sửa concurrency để hủy các task cũ, tránh tạo ra nhiều artifact thừa
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true 
 
 jobs:
   build:
@@ -28,9 +29,8 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          # Đổi từ "20" sang "24" để chạy code của anh trên môi trường mới nhất
           node-version: "24"
-          cache: 'npm' # Thêm dòng này để cài đặt nhanh hơn ở các lần sau
+          cache: 'npm'
           
       - name: Install dependencies
         run: npm install
@@ -44,6 +44,8 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
+          # Thêm dòng này để xóa các artifact cũ nếu có trùng lặp trong cache
+          retention-days: 1
 
   deploy:
     environment:
