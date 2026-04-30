@@ -51,6 +51,7 @@ export default function App() {
   });
   
   const [expandedKhach, setExpandedKhach] = useState<Record<number, boolean>>({});
+  const [expandedPreview, setExpandedPreview] = useState<Record<number, boolean>>({});
   
   const [selectedImage, setSelectedImage] = useState<{base64: string, mime: string} | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -322,6 +323,7 @@ export default function App() {
     setAiResult(null);
     setCalcResult(null);
     setExpandedKhach({});
+    setExpandedPreview({});
     setSelectedImage(null);
   };
 
@@ -803,18 +805,50 @@ export default function App() {
                       <Users size={14} className="text-emerald-500" />
                       <span>{aiResult.danh_sach?.length || 0} người chơi</span>
                     </div>
-                    <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar">
-                      {(aiResult.danh_sach || []).map((khach, idx) => (
-                        <div key={idx} className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 shadow-sm">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-bold text-emerald-800">Khách: {khach.khach_hang}</span>
-                            <span className="text-sm font-mono font-bold text-emerald-700">{new Intl.NumberFormat('vi-VN').format(khach.tong_tien_xac || 0)}đ</span>
+                    <div className="max-h-48 overflow-y-auto space-y-2 custom-scrollbar pr-2">
+                      {(aiResult.danh_sach || []).map((khach, idx) => {
+                        const isExpanded = !!expandedPreview[idx];
+                        return (
+                          <div key={idx} className="bg-emerald-50 border border-emerald-200 rounded-xl overflow-hidden shadow-sm transition-all">
+                            <div 
+                              className="p-3 cursor-pointer hover:bg-emerald-100/50 transition-colors"
+                              onClick={() => setExpandedPreview(prev => ({ ...prev, [idx]: !prev[idx] }))}
+                            >
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-sm font-bold text-emerald-800">Khách: {khach.khach_hang}</span>
+                                <span className="text-sm font-mono font-bold text-emerald-700">{new Intl.NumberFormat('vi-VN').format(khach.tong_tien_xac || 0)}đ</span>
+                              </div>
+                              <div className="text-[11px] text-emerald-600/80 uppercase tracking-widest font-semibold flex items-center gap-1">
+                                {khach.chi_tiet?.length || 0} mã cược
+                                {khach.chi_tiet?.length > 0 && (
+                                  isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />
+                                )}
+                              </div>
+                            </div>
+                            
+                            {isExpanded && khach.chi_tiet?.length > 0 && (
+                              <div className="bg-emerald-100/30 p-3 pt-1 border-t border-emerald-100 space-y-1">
+                                {khach.chi_tiet.map((ct: any, ctIdx: number) => {
+                                  let amount = ct.diem || ct.tien_cuoc || 0;
+                                  let amountUnits = ct.loai === 'lo' ? 'điểm' : 'đ';
+                                  let soStr = Array.isArray(ct.so) ? ct.so.join(', ') : ct.so;
+                                  return (
+                                    <div key={ctIdx} className="flex justify-between items-center text-xs border-b border-emerald-100/50 last:border-0 pb-1 last:pb-0">
+                                      <div className="flex gap-2 w-2/3">
+                                        <span className="font-bold text-emerald-700 capitalize w-12 flex-shrink-0">{ct.loai}</span>
+                                        <span className="text-emerald-900 font-mono tracking-tight break-all">{soStr}</span>
+                                      </div>
+                                      <span className="font-mono text-emerald-700 font-semibold text-right">
+                                        x{new Intl.NumberFormat('vi-VN').format(amount)} {amountUnits}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
-                          <div className="text-[11px] text-emerald-600/80 uppercase tracking-widest font-semibold flex flex-wrap gap-1">
-                            {khach.chi_tiet?.length || 0} mã cược
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </motion.div>
                 )}

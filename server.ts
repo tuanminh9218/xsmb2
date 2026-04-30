@@ -119,23 +119,33 @@ async function scrapeXskt(dateStr?: string) {
       time: ""
     };
 
-    const table = $("#xsmb").first();
-    if (table.length === 0) return null;
+    const container = $("#MB0");
+    if (container.length === 0) return null;
     
-    kqxs.time = table.find("th").first().text().trim();
+    let timeTitle = container.find(".dockq").attr("title");
+    kqxs.time = timeTitle ? timeTitle.replace("Đọc kết quả ", "") : container.find("th").first().text().trim();
 
-    table.find("tr").each((_, tr) => {
-      const gName = $(tr).find(".txt-giai").text().trim().toLowerCase();
-      const numbers = $(tr).find(".v-giai").text().trim().split(/\s+/).filter(Boolean);
-      
-      if (gName.includes("đb")) kqxs.dac_biet.push(...numbers);
-      else if (gName.includes("g1")) kqxs.giai_1.push(...numbers);
-      else if (gName.includes("g2")) kqxs.giai_2.push(...numbers);
-      else if (gName.includes("g3")) kqxs.giai_3.push(...numbers);
-      else if (gName.includes("g4")) kqxs.giai_4.push(...numbers);
-      else if (gName.includes("g5")) kqxs.giai_5.push(...numbers);
-      else if (gName.includes("g6")) kqxs.giai_6.push(...numbers);
-      else if (gName.includes("g7")) kqxs.giai_7.push(...numbers);
+    container.find("tr").each((_, tr) => {
+      let labelTd = $(tr).find('td[title^="Giải"]');
+      if (labelTd.length > 0) {
+        let label = labelTd.attr('title').toLowerCase();
+        
+        let valTd = labelTd.next('td');
+        // replace <br> with space to properly extract numbers
+        valTd.find('br').replaceWith(' ');
+        
+        let numbersRaw = valTd.text().trim();
+        let numbers = numbersRaw.split(/\s+/).filter(Boolean);
+        
+        if (label === "giải đb" || label.includes("đb")) kqxs.dac_biet.push(...numbers);
+        else if (label.includes("nhất") || label.includes("g1")) kqxs.giai_1.push(...numbers);
+        else if (label.includes("nhì") || label.includes("g2")) kqxs.giai_2.push(...numbers);
+        else if (label.includes("ba") || label.includes("g3")) kqxs.giai_3.push(...numbers);
+        else if (label.includes("tư") || label.includes("g4")) kqxs.giai_4.push(...numbers);
+        else if (label.includes("năm") || label.includes("năm") || label.includes("g5")) kqxs.giai_5.push(...numbers);
+        else if (label.includes("sáu") || label.includes("g6")) kqxs.giai_6.push(...numbers);
+        else if (label.includes("bảy") || label.includes("g7")) kqxs.giai_7.push(...numbers);
+      }
     });
 
     return kqxs;
@@ -165,24 +175,25 @@ async function scrapeXosoComVn(dateStr?: string) {
       time: ""
     };
 
-    // Find the current result table/box
-    // xoso.com.vn uses .box-ketqua or .box-kq-mien-bac depending on page
-    const container = $(".box-ketqua").first().length ? $(".box-ketqua").first() : $(".box-kq-mien-bac").first();
-    kqxs.time = container.find(".title-xoso").text().trim() || container.find(".title-kq").text().trim();
+    // Find the current result table
+    const container = $(".table-result").first();
+    kqxs.time = $("h1").first().text().trim() || "Kết Quả Xổ Số";
 
     // Mapping prize rows
-    container.find("table tr").each((_, tr) => {
-      const label = $(tr).find("td").first().text().trim().toLowerCase();
+    container.find("tr").each((_, tr) => {
+      let label = $(tr).find("th").first().text().trim().toLowerCase();
+      if (!label) label = $(tr).find("td").first().text().trim().toLowerCase();
+
       const numbers = $(tr).find("td").last().text().trim().split(/\s+/).filter(Boolean);
       
-      if (label.includes("đặc biệt") || label.includes("đb")) kqxs.dac_biet.push(...numbers);
-      else if (label.includes("giải nhất") || label.includes("g1")) kqxs.giai_1.push(...numbers);
-      else if (label.includes("giải nhì") || label.includes("g2")) kqxs.giai_2.push(...numbers);
-      else if (label.includes("giải ba") || label.includes("g3")) kqxs.giai_3.push(...numbers);
-      else if (label.includes("giải tư") || label.includes("g4")) kqxs.giai_4.push(...numbers);
-      else if (label.includes("giải năm") || label.includes("g5")) kqxs.giai_5.push(...numbers);
-      else if (label.includes("giải sáu") || label.includes("g6")) kqxs.giai_6.push(...numbers);
-      else if (label.includes("giải bảy") || label.includes("g7")) kqxs.giai_7.push(...numbers);
+      if (label === "đặc biệt" || label === "đb" || label.includes("đb") || label.includes("đặc biệt")) kqxs.dac_biet.push(...numbers);
+      else if (label === "giải nhất" || label === "1" || label.includes("giải nhất")) kqxs.giai_1.push(...numbers);
+      else if (label === "giải nhì" || label === "2" || label.includes("giải nhì")) kqxs.giai_2.push(...numbers);
+      else if (label === "giải ba" || label === "3" || label.includes("giải ba")) kqxs.giai_3.push(...numbers);
+      else if (label === "giải tư" || label === "4" || label.includes("giải tư")) kqxs.giai_4.push(...numbers);
+      else if (label === "giải năm" || label === "5" || label.includes("giải năm")) kqxs.giai_5.push(...numbers);
+      else if (label === "giải sáu" || label === "6" || label.includes("giải sáu")) kqxs.giai_6.push(...numbers);
+      else if (label === "giải bảy" || label === "7" || label.includes("giải bảy")) kqxs.giai_7.push(...numbers);
     });
 
     // Fallback if table structure is different (some pages use classes directly)
@@ -209,10 +220,10 @@ async function scrapeXosoComVn(dateStr?: string) {
 }
 
 async function scrapeKqxsVn(dateStr?: string) {
-  // kqxs.vn format for date: https://www.kqxs.vn/mien-bac/29-04-2026
-  let url = "https://www.kqxs.vn/mien-bac";
+  // kqxs.vn format for date: https://kqxs.vn/mien-bac/29-04-2026 (although invalid dates redirect to today)
+  let url = "https://kqxs.vn/mien-bac";
   if (dateStr) {
-    url = `https://www.kqxs.vn/mien-bac/${dateStr}`;
+    url = `https://kqxs.vn/mien-bac/${dateStr}.html`;
   }
   
   try {
@@ -228,49 +239,36 @@ async function scrapeKqxsVn(dateStr?: string) {
       time: ""
     };
 
-    // Extract time from the header of the result box
-    const titleEl = $(".box-kq-mien-bac .title-kq").first();
-    kqxs.time = titleEl.text().trim();
+    const tbl = $(".table-result-lottery").first();
+    if (tbl.length === 0) return null;
     
-    // kqxs.vn usually uses classes like .db, .g1, .g2... or tables
-    // We target the first result box for current/specific date
-    const parent = $(".box-kq-mien-bac").first();
+    kqxs.time = tbl.find('caption').text().trim() || "Kết quả xổ số";
     
-    if (parent.length === 0) {
-      // Try generic table fallback
-      const table = $("table.kqmb").first().length ? $("table.kqmb").first() : $("table").first();
-      kqxs.time = kqxs.time || $(".title-kq").first().text().trim();
-      
-      table.find("tr").each((_, tr) => {
-        const text = $(tr).text().toLowerCase();
-        const nums = $(tr).find("td").last().text().trim().split(/\s+/).filter(Boolean);
-        if (text.includes("đặc biệt")) kqxs.dac_biet.push(...nums);
-        else if (text.includes("giải nhất")) kqxs.giai_1.push(...nums);
-        else if (text.includes("giải nhì")) kqxs.giai_2.push(...nums);
-        else if (text.includes("giải ba")) kqxs.giai_3.push(...nums);
-        else if (text.includes("giải tư")) kqxs.giai_4.push(...nums);
-        else if (text.includes("giải năm")) kqxs.giai_5.push(...nums);
-        else if (text.includes("giải sáu")) kqxs.giai_6.push(...nums);
-        else if (text.includes("giải bảy")) kqxs.giai_7.push(...nums);
-      });
-    } else {
-      // Giai Dac Biet
-      parent.find(".db, .v-gdb, .v-db").each((_, el) => {
-        const val = $(el).text().trim();
-        if (val) kqxs.dac_biet.push(val);
-      });
-
-      // Other prizes
-      for (let i = 1; i <= 7; i++) {
-        parent.find(`.g${i}, .v-g${i}`).each((_, el) => {
-          const text = $(el).text().trim();
-          if (text) {
-            // Numbers might be separated by space or newline
-            kqxs[`giai_${i}`].push(...text.split(/\s+/).filter(Boolean));
-          }
+    tbl.find("tr").each((_, tr) => {
+        const label = $(tr).find("td").first().text().trim().toLowerCase();
+        let numbers: string[] = [];
+        $(tr).find("td:not(:first-child)").each((_, vTd) => {
+            let numStr = $(vTd).text().trim();
+            let spans = $(vTd).find('span');
+            if (spans.length > 0) {
+              spans.each((_, span) => {
+                  let ns = $(span).text().trim();
+                  numbers.push(...ns.split(/[-,\s\.]+/).filter(Boolean));
+              });
+            } else if (numStr) {
+                 numbers.push(...numStr.split(/[-,\s\.]+/).filter(Boolean));
+            }
         });
-      }
-    }
+        
+        if (label === "đặc biệt" || label === "đb" || label.includes("đb") || label.includes("đặc biệt")) kqxs.dac_biet.push(...numbers);
+        else if (label === "giải nhất" || label === "1" || label.includes("giải nhất")) kqxs.giai_1.push(...numbers);
+        else if (label === "giải nhì" || label === "2" || label.includes("giải nhì")) kqxs.giai_2.push(...numbers);
+        else if (label === "giải ba" || label === "3" || label.includes("giải ba")) kqxs.giai_3.push(...numbers);
+        else if (label === "giải tư" || label === "4" || label.includes("giải tư")) kqxs.giai_4.push(...numbers);
+        else if (label === "giải năm" || label === "5" || label.includes("giải năm")) kqxs.giai_5.push(...numbers);
+        else if (label === "giải sáu" || label === "6" || label.includes("giải sáu")) kqxs.giai_6.push(...numbers);
+        else if (label === "giải bảy" || label === "7" || label.includes("giải bảy")) kqxs.giai_7.push(...numbers);
+    });
 
     // Final validation: if we have NO numbers at all, return null to trigger error
     if (kqxs.dac_biet.length === 0 && kqxs.giai_1.length === 0) return null;
